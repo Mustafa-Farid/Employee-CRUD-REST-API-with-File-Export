@@ -1,0 +1,335 @@
+openapi: 3.0.3
+info:
+  title: Employee CRUD REST API
+  description: Comprehensive employee management system with multi-format file export capabilities
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8080/api
+    description: Development server
+
+paths:
+  /employees:
+    get:
+      summary: Get all employees
+      description: Retrieve a list of all employees
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employee'
+    post:
+      summary: Create a new employee
+      description: Add a new employee to the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Employee'
+      responses:
+        '200':
+          description: Employee created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+    put:
+      summary: Update an existing employee
+      description: Update all fields of an employee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Employee'
+      responses:
+        '200':
+          description: Employee updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+
+  /employees/{id}:
+    get:
+      summary: Get employee by ID
+      description: Retrieve a specific employee by their ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '404':
+          description: Employee not found
+    delete:
+      summary: Delete an employee
+      description: Remove an employee from the system
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Employee deleted successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Deleted employee with id 1"
+
+    patch:
+      summary: Partially update an employee
+      description: Update specific fields of an employee using PATCH
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Employee updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+
+  /employeesByFN/{FN}:
+    get:
+      summary: Get employees by first name
+      description: Retrieve employees filtered by first name
+      parameters:
+        - name: FN
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employee'
+
+  /export:
+    get:
+      summary: Export employees to file
+      description: Export all employees to various file formats including JasperReports
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pdf, excel, word, jasper-pdf, jasper-html, jasper-xlsx]
+            description: |
+              Export format. 
+              Standard formats: pdf, excel, word
+              JasperReports formats: jasper-pdf, jasper-html, jasper-xlsx
+        - name: fileName
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "employees"
+        - name: reportTitle
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Custom title for JasperReports (uses 'Par1' parameter)
+      responses:
+        '200':
+          description: File exported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+
+  /export/filtered:
+    get:
+      summary: Export filtered employees with JasperReports
+      description: Export filtered employees using JasperReports templates
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pdf, html, xlsx]
+            description: Output format for JasperReports
+        - name: firstName
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Filter by first name
+        - name: fileName
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "filtered_employees"
+        - name: reportTitle
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Custom report title
+      responses:
+        '200':
+          description: Filtered report exported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+
+  /export/jasper-test:
+    get:
+      summary: Test JasperReports generation
+      description: Generate a test report using JasperReports
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "pdf"
+            enum: [pdf, html, xlsx]
+        - name: title
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Custom report title
+      responses:
+        '200':
+          description: Test report generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+
+  /compile-report:
+    post:
+      summary: Compile JasperReports template
+      description: Compile a JasperReports template from .jrxml to .jasper
+      parameters:
+        - name: reportName
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Name of the report template (without extension)
+      responses:
+        '200':
+          description: Report compiled successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Failed to compile report
+
+components:
+  schemas:
+    Employee:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: Auto-generated employee ID
+        firstName:
+          type: string
+          description: Employee's first name
+        lastName:
+          type: string
+          description: Employee's last name
+        email:
+          type: string
+          format: email
+          description: Employee's email address
+      required:
+        - firstName
+        - lastName
+        - email
+
+    FileResponse:
+      type: object
+      properties:
+        fileName:
+          type: string
+          description: Name of the exported file
+        fileType:
+          type: string
+          description: MIME type of the file
+        base64Content:
+          type: string
+          description: Base64 encoded file content
+        message:
+          type: string
+          description: Status message
+
+  responses:
+    NotFoundError:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: string
